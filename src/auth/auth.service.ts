@@ -8,36 +8,81 @@ import * as bcrypt from "bcryptjs";
 import { responseFn } from 'src/common/response.services';
 import { generateOtp } from 'src/common/util.services';
 import { mail } from 'src/common/mail.services';
+import { Connections } from 'src/chat/interfaces/connections.interface';
+import * as mongoose from 'mongoose';
 
 const saltRounds = 10;
 
 @Injectable()
 export class AuthService {
-    constructor(@InjectModel('users') private usersModel: Model<Users>, private jwtService: JwtService) { }
+    constructor(
+        @InjectModel('users') private usersModel: Model<Users>,
+        @InjectModel('connections') private connectionModel: Model<Connections>,
+        private jwtService: JwtService
+    ) { }
 
     async createUser(req: Request, res: Response) {
         try {
             const userData = req.body
-            // Check Email
             const emailExist = await this.usersModel.findOne({ email: userData.email })
-            if (emailExist) return responseFn(res, 400, 'User Already Exist')
             // Encrypt
-            const hashPassword = await bcrypt.hash(userData.password, saltRounds);
-            userData.password = hashPassword;
-            userData.gender = userData.gender.toLowerCase();
-            userData.otp = generateOtp();
+            
+            if (userData?.providerType && userData.providerType.toUpperCase() === 'NORMAL') {
+                
+                if (emailExist) {
+                    if (emailExist.isActive) return responseFn(res, 400, 'User Already Exist')
+                    emailExist.otp = generateOtp();
 
-            const userObject = await this.usersModel.create(userData)
-            if (userObject) {
-                const payload = {
-                    email: userData.email,
-                    subject: "Account Verification",
-                    data: `<h1>Welcome</h1></br><p>Your Otp is : ${userData.otp} </p>`
+                    const token = await this.createToken(userData.email, userData._id)
+                    emailExist.token = token.accessToken
+                    await emailExist.save();
+                    const payload = {
+                        email: emailExist.email,
+                        subject: "Account Verification",
+                        data: `<h1>Welcome</h1></br><p>Your Otp is : ${emailExist.otp} </p>`
+                    }
+                    await mail(payload)
+                    return responseFn(res, 200, 'SignUp Successfully', { username: emailExist.username, email: emailExist.email, dob: emailExist.dob, gender: emailExist.gender, token: emailExist.token })
                 }
-                await mail(payload)
-                return responseFn(res, 200, 'SignUp Successfully', { username: userObject.username, email: userObject.email, dob: userObject.dob, gender: userObject.gender })
+                const hashPassword = await bcrypt.hash(userData.password, saltRounds);
+                userData.password = hashPassword;
+                userData.gender = userData.gender.toLowerCase();
+                userData.otp = generateOtp();
+                const token = await this.createToken(userData.email, userData._id)
+                userData.token = token.accessToken
+                const userObject = await this.usersModel.create(userData)
+                if (userObject) {
+                    const payload = {
+                        email: userData.email,
+                        subject: "Account Verification",
+                        data: `<h1>Welcome</h1></br><p>Your Otp is : ${userData.otp} </p>`
+                    }
+                    await mail(payload)
+                    return responseFn(res, 200, 'SignUp Successfully', { username: userObject.username, email: userObject.email, dob: userObject.dob, gender: userObject.gender, token: userObject.token })
+                } else {
+                    return responseFn(res, 400, 'SignUp Failed')
+                }
             } else {
-                return responseFn(res, 400, 'Singup Failed')
+                
+                if (userData.socialInfo) {
+
+                    if (!emailExist) {
+                        userData.isActive = true
+                        userData.gender = userData.gender.toLowerCase();
+                        userData.providerType = userData.providerType.toUpperCase();
+                        const token = await this.createToken(userData.email, userData._id)
+                        userData.token = token.accessToken
+                        if (userData.deviceType) userData.deviceType = userData.deviceType.toUpperCase();
+                        const userObject = await this.usersModel.create(userData)
+                        return responseFn(res, 200, 'Login Successfully', { email: userObject.email, token: userObject.token })
+                    } else {                        
+                        emailExist.socialInfo = userData.socialInfo;
+                        const token = await this.createToken(userData.email, userData._id)
+                        emailExist.token = token.accessToken
+                        await emailExist.save();
+                        return responseFn(res, 200, 'Login Successfully', { email: emailExist.email, token: emailExist.token })
+                    }
+                }
             }
         } catch (error) {
             return responseFn(res, 500, error.message)
@@ -71,7 +116,7 @@ export class AuthService {
     async userVerification(req: Request, res: Response) {
         try {
             const { email, otp, fcmToken, deviceuuid, deviceType } = req.body
-            const userData: any = await this.usersModel.findOne({ email })
+            const userData: any = await this.usersModel.findOne({ email, providerType: "NORMAL" })
             if (!userData) return responseFn(res, 400, "User not Found");
             if (userData.otp !== otp) return responseFn(res, 400, "Invalid OTP");
             userData.isActive = true
@@ -94,5 +139,74 @@ export class AuthService {
         return await this.usersModel.findOne({ email: user.email })
     }
 
+    async getUser(req: Request, res: Response) {
+        try {
+            const userData = await this.usersModel.findById(req.body.userId, { username: 1, email: 1, dob: 1, gender: 1 })
+            if (!userData) return responseFn(res, 400, "User not Found");
+            return responseFn(res, 200, "get user Success", userData)
+        } catch (error) {
+            return responseFn(res, 500, error.message)
+        }
+    }
+    async getUsers(req: Request, res: Response) {
+        try {
+            let page: any = Number(req.query.page)
+            let perPage: any = Number(req.query.perPage)
+            const userData = await this.usersModel.find({ isActive: true }, { username: 1, email: 1, dob: 1, gender: 1 }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
+            if (!userData.length) return responseFn(res, 400, "User not Found");
+            return responseFn(res, 200, "Get All Users Success", userData)
+        } catch (error) {
+            return responseFn(res, 500, error.message)
+        }
+    }
+    async getConnections(req: Request, res: Response) {
+        try {
+            let { page, perPage, userId } = req.body
+            const userData = await this.connectionModel.find({ $or: [{ userId, isConnection: 'ACCEPTED' }, { connectionId: userId, isConnection: 'ACCEPTED' }] })//.limit(50)
+            const connectionIdArr = userData.map((data: any) => {
+                if (data.userId == req.body.userId) return mongoose.Types.ObjectId(data.connectionId);
+                return mongoose.Types.ObjectId(data.userId);
+            })
+            const userConnectionData = await this.usersModel.find({ _id: { $in: connectionIdArr } }, { username: 1, email: 1, dob: 1, gender: 1 }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
+
+            return responseFn(res, 200, "Get All Connections successfully", userConnectionData)
+        } catch (error) {
+            return responseFn(res, 500, error.message)
+        }
+    }
+    async getPendingConnections(req: Request, res: Response) {
+        try {
+            let { page, perPage, userId } = req.body
+            const userData = await this.connectionModel.find({ $or: [{ userId, isConnection: 'PENDING' }, { connectionId: userId, isConnection: 'PENDING' }] }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
+            const connectionIdArr = userData.map((data: any) => {
+                if (data.userId == userId) return mongoose.Types.ObjectId(data.connectionId);
+                return mongoose.Types.ObjectId(data.userId);
+            })
+            const userConnectionData = await this.usersModel.find({ _id: { $in: connectionIdArr } }, { username: 1, email: 1, dob: 1, gender: 1 }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
+
+            return responseFn(res, 200, "Get All Pending Connections successfully", userConnectionData)
+        } catch (error) {
+            return responseFn(res, 500, error.message)
+        }
+    }
+    async sendConnectionsRequest(req: Request, res: Response) {
+        try {
+            let { userId, connectionId, status = "PENDING" } = req.body
+            status = status.toUpperCase();
+            if (!(userId && connectionId && status)) return responseFn(res, 400, "Invalid User Information");
+            let connectionData = await this.connectionModel.findOne({ userId, connectionId })
+            if (!connectionData) {
+                connectionData = await this.connectionModel.create({ userId, connectionId, isConnection: status.toUpperCase() })
+            } else {
+                connectionData.isConnection = status.toUpperCase();
+                await connectionData.save();
+            }
+
+            return responseFn(res, 200, "Connection Request send successfully", connectionData)
+        } catch (error) {
+            return responseFn(res, 500, error.message)
+        }
+    }
 
 }
+

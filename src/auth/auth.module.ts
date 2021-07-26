@@ -6,11 +6,16 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { userSchema } from './model/users.model';
 import { jwtConstants } from 'src/common/jwt.constants';
-import { JwtStrategy } from './jwt.strategy';
+import { messageSchema } from 'src/chat/model/message.model';
+import { connectionSchema } from 'src/chat/model/connection.model';
 
 @Module({
     imports: [
-        MongooseModule.forFeature([{ name: 'users', schema: userSchema, collection: 'users' },]),
+        MongooseModule.forFeature([
+            { name: 'users', schema: userSchema, collection: 'users' },
+            { name: 'messages', schema: messageSchema, collection: 'messages' },
+            { name: 'connections', schema: connectionSchema, collection: 'connections' }
+        ]),
         PassportModule.register({
             defaultStrategy: 'jwt',
             property: 'user',

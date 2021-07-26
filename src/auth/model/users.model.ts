@@ -4,7 +4,7 @@ export const userSchema = new mongoose.Schema({
 
     username: {
         type: String,
-        required: true
+        default: null
     },
     email: {
         type: String,
@@ -12,7 +12,7 @@ export const userSchema = new mongoose.Schema({
     },
     dob: {
         type: Date,
-        required: true
+        default: null
     },
     password: {
         type: String,
@@ -26,10 +26,10 @@ export const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    isOnline: {
-        type: Boolean,
-        default: false
-    },
+    // isOnline: {
+    //     type: Boolean,
+    //     default: false
+    // },
     token: {
         type: String,
         default: null,
@@ -50,6 +50,15 @@ export const userSchema = new mongoose.Schema({
         type: String,
         enum: ['ANDROID', 'IPHONE'],
         default: 'ANDROID'
+    },
+    providerType: {
+        type: String,
+        enum: ['FB', 'GOOGLE', 'APPLE', 'NORMAL'],
+        default: 'NORMAL'
+    },
+    socialInfo: {
+        type: String,
+        default: null
     }
 
 }, { timestamps: true })

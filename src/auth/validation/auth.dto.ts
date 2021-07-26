@@ -2,7 +2,8 @@ import { IsString, IsNotEmpty, IsEmail, MaxLength, IsOptional, MinLength, IsBool
 
 export class SignUpForUsers {
 
-    @IsNotEmpty()
+    // @IsNotEmpty()
+    @IsOptional()
     @IsString()
     username: String;
 
@@ -11,17 +12,19 @@ export class SignUpForUsers {
     @IsNotEmpty()
     email: String;
 
-    @IsNotEmpty()
+    // @IsNotEmpty()
+    @IsOptional()
     // @IsString()
     dob: String;
 
-    @IsNotEmpty()
+    // @IsNotEmpty()
+    @IsOptional()
     @IsString()
     gender: String;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
-    @MinLength(8)
+    // @MinLength(8)
     password: String;
 
 }
@@ -50,12 +53,41 @@ export class VerificationForUsers {
     @IsString()
     @IsNotEmpty()
     fcmToken: String;
-    
+
     @IsString()
     @IsNotEmpty()
     deviceuuid: String;
-    
+
     @IsString()
     @IsNotEmpty()
     deviceType: String;
+}
+
+export class GetUsers {
+
+    @IsString()
+    @IsNotEmpty()
+    userId: String;
+
+    // @IsString()
+    // @IsNotEmpty()
+    // deviceType: String;
+}
+export class ConnectionRequest {
+
+    @IsString()
+    @IsNotEmpty()
+    userId: String;
+
+    @IsString()
+    @IsNotEmpty()
+    connectionId: String;
+
+    @IsString()
+    @IsNotEmpty()
+    status: String;
+
+    // @IsString()
+    // @IsNotEmpty()
+    // deviceType: String;
 }

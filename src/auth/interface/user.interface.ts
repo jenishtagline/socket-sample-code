@@ -1,6 +1,7 @@
 import { Document } from 'mongoose'
 
 export interface Users extends Document {
+    socialInfo: any;
     token: string;
     username: string,
     email: string,
