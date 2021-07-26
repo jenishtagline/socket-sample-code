@@ -31,6 +31,7 @@ export class AuthService {
                 
                 if (emailExist) {
                     if (emailExist.isActive) return responseFn(res, 400, 'User Already Exist')
+                    if (!userData.password || userData.password.length <= 8) return responseFn(res, 400, 'Password length should be 8')
                     emailExist.otp = generateOtp();
 
                     const token = await this.createToken(userData.email, userData._id)
@@ -63,7 +64,7 @@ export class AuthService {
                     return responseFn(res, 400, 'SignUp Failed')
                 }
             } else {
-                
+
                 if (userData.socialInfo) {
 
                     if (!emailExist) {
@@ -75,7 +76,7 @@ export class AuthService {
                         if (userData.deviceType) userData.deviceType = userData.deviceType.toUpperCase();
                         const userObject = await this.usersModel.create(userData)
                         return responseFn(res, 200, 'Login Successfully', { email: userObject.email, token: userObject.token })
-                    } else {                        
+                    } else {
                         emailExist.socialInfo = userData.socialInfo;
                         const token = await this.createToken(userData.email, userData._id)
                         emailExist.token = token.accessToken
