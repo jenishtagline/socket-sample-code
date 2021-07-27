@@ -26,30 +26,30 @@ export class AuthController {
         return await this.authService.userVerification(req, res)
     }
 
-    @UseGuards(AuthGuard('jwt'))
+    // @UseGuards(AuthGuard('jwt'))
     @Post('getUser')
     async getUser(@Body(new ValidationPipe()) data: GetUsers, @Req() req, @Res() res) {
         return await this.authService.getUser(req, res)
     }
 
-    @UseGuards(AuthGuard('jwt'))
+    // @UseGuards(AuthGuard('jwt'))
     @Get('getUsers')
     async getUsers(@Req() req, @Res() res) {
         return await this.authService.getUsers(req, res)
     }
-    @UseGuards(AuthGuard('jwt'))
+    // @UseGuards(AuthGuard('jwt'))
     @Post('getConnections')
     async getConnection(@Body(new ValidationPipe()) data: GetUsers, @Req() req, @Res() res) {
         return await this.authService.getConnections(req, res)
     }
 
-    @UseGuards(AuthGuard('jwt'))
+    // @UseGuards(AuthGuard('jwt'))
     @Post('getPendingConnections')
     async getPendingConnection(@Body(new ValidationPipe()) data: GetUsers, @Req() req, @Res() res) {
         return await this.authService.getPendingConnections(req, res)
     }
 
-    @UseGuards(AuthGuard('jwt'))
+    // @UseGuards(AuthGuard('jwt'))
     @Post('sendConnectionRequest')
     async connectionRequest(@Body(new ValidationPipe()) data: ConnectionRequest, @Req() req, @Res() res) {
         return await this.authService.sendConnectionsRequest(req, res)

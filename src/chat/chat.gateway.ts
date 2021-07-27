@@ -10,7 +10,7 @@ import { Messages } from './interfaces/messages.interface';
 import { config } from "dotenv";
 config();
 
-@WebSocketGateway(Number(process.env.SOCKET_PORT) || 3000, {
+@WebSocketGateway(Number(process.env.PORT) || 3000, {
    namespace: 'chats',
  cors: true })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
