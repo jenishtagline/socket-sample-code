@@ -65,16 +65,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(connectionSocketId).emit('messages', { statusCode: 200, message: "message send successfully", data: messageData })
   }
 
-  // @SubscribeMessage('getMessages')
-  // async handleGetMessage(client: Socket, { senderId, receiverId }: any) {
-  //   if (!(senderId && receiverId)) return client.emit('getMessages', { statusCode: 400, message: "Invalid message information", data: [] })
-  //   const connectionExist = await this.connectionModel.findOne({ $or: [{ userId: senderId, connectionId: receiverId, isConnection: 'ACCEPTED' }, { userId: receiverId, connectionId: senderId, isConnection: 'ACCEPTED' }] })
-  //   if (!connectionExist) {
-  //     return client.emit('getMessages', { statusCode: 400, message: "Connection Not found", data: [] })
-  //   }
-  //   const messageData = await this.messageModel.find({ $or: [{ senderId, receiverId }, { senderId: receiverId, receiverId: senderId }] })
-  //   client.emit('getMessages', { statusCode: 200, message: "message send successfully", data: messageData })
-  // }
+  @SubscribeMessage('getMessages')
+  async handleGetMessage(client: Socket, { senderId, receiverId, perPage, page }: any) {
+    if (!(senderId && receiverId)) return client.emit('getMessages', { statusCode: 400, message: "Invalid message information", data: [] })
+    const connectionExist = await this.connectionModel.findOne({ $or: [{ userId: senderId, connectionId: receiverId, isConnection: 'ACCEPTED' }, { userId: receiverId, connectionId: senderId, isConnection: 'ACCEPTED' }] })
+    if (!connectionExist) {
+      return client.emit('getMessages', { statusCode: 400, message: "Connection Not found", data: [] })
+    }
+    const messageData = await this.messageModel.find({ $or: [{ senderId, receiverId }, { senderId: receiverId, receiverId: senderId }] }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
+    client.emit('getMessages', { statusCode: 200, message: "get messages successfully", data: messageData })
+  }
 
   // @SubscribeMessage('getUser')
   // async handleUser(client: Socket, payload: any) {
