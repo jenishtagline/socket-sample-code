@@ -8,9 +8,8 @@
   "scripts": {
     "heroku:prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json",
-    "prebuild": "rimraf dist",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "start": "ts-node -r tsconfig-paths/register src/main.ts",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": " node dist/src/main.js",
@@ -21,7 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prestart:prod": "rimraf dist && npm run build",
-    "postinstall": "npm run build",
+    "postinstall": "npm run prestart:prod",
+    "heroku-postbuild": "npm install --only=dev --no-shrinkwrap && npm run build",
     "deploy": "git add . && git commit -m Heroku && git push heroku master"
   },
   "dependencies": {
