@@ -26,9 +26,9 @@ export class AuthService {
             const userData = req.body
             const emailExist = await this.usersModel.findOne({ email: userData.email })
             // Encrypt
-            
+
             if (userData?.providerType && userData.providerType.toUpperCase() === 'NORMAL') {
-                
+
                 if (emailExist) {
                     if (emailExist.isActive) return responseFn(res, 400, 'User Already Exist')
                     if (!userData.password || userData.password.length <= 8) return responseFn(res, 400, 'Password length should be 8')
@@ -75,13 +75,13 @@ export class AuthService {
                         userData.token = token.accessToken
                         if (userData.deviceType) userData.deviceType = userData.deviceType.toUpperCase();
                         const userObject = await this.usersModel.create(userData)
-                        return responseFn(res, 200, 'Login Successfully', { email: userObject.email, token: userObject.token })
+                        return responseFn(res, 200, 'Login Successfully', { _id: userObject._id, email: userObject.email, token: userObject.token })
                     } else {
                         emailExist.socialInfo = userData.socialInfo;
                         const token = await this.createToken(userData.email, userData._id)
                         emailExist.token = token.accessToken
                         await emailExist.save();
-                        return responseFn(res, 200, 'Login Successfully', { email: emailExist.email, token: emailExist.token })
+                        return responseFn(res, 200, 'Login Successfully', { _id: emailExist._id, email: emailExist.email, token: emailExist.token })
                     }
                 }
             }
@@ -178,7 +178,7 @@ export class AuthService {
     async getPendingConnections(req: Request, res: Response) {
         try {
             let { page, perPage, userId } = req.body
-            const userData = await this.connectionModel.find({ $or: [{ userId, isConnection: 'PENDING' }, { connectionId: userId, isConnection: 'PENDING' }] }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
+            const userData = await this.connectionModel.find({ $or: [{ userId, isConnection: 'PENDING' }, { connectionId: userId, isConnection: 'PENDING' }] })//.sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
             const connectionIdArr = userData.map((data: any) => {
                 if (data.userId == userId) return mongoose.Types.ObjectId(data.connectionId);
                 return mongoose.Types.ObjectId(data.userId);
@@ -195,15 +195,24 @@ export class AuthService {
             let { userId, connectionId, status = "PENDING" } = req.body
             status = status.toUpperCase();
             if (!(userId && connectionId && status)) return responseFn(res, 400, "Invalid User Information");
-            let connectionData = await this.connectionModel.findOne({ userId, connectionId })
-            if (!connectionData) {
-                connectionData = await this.connectionModel.create({ userId, connectionId, isConnection: status.toUpperCase() })
-            } else {
-                connectionData.isConnection = status.toUpperCase();
-                await connectionData.save();
-            }
+            let connectionExist = await this.connectionModel.findOne({ $or: [{ userId, connectionId }, { connectionId: userId, userId: connectionId }] })
 
-            return responseFn(res, 200, "Connection Request send successfully", connectionData)
+            if (!connectionExist) {
+                connectionExist = await this.connectionModel.create({ userId, connectionId, isConnection: status.toUpperCase() })
+                connectionExist.isConnection = status.toUpperCase();
+                await connectionExist.save();
+                return responseFn(res, 200, "Connection Request send successfully", { data: connectionExist, connectionStatus: 'PENDING' })
+            }
+            if (connectionExist?.isConnection === "PENDING") {
+                if (status === "ACCEPTED") {
+                    connectionExist.isConnection = status.toUpperCase();
+                    await connectionExist.save();
+                    return responseFn(res, 200, "User Request Accept Success", { data: connectionExist, connectionStatus: 'ACCEPTED' })
+                }
+                return responseFn(res, 200, "Already request sended", { data: connectionExist, connectionStatus: 'PENDING' })
+            }
+            return responseFn(res, 200, "User Already request Accept", { data: connectionExist, connectionStatus: 'ACCEPTED' })
+
         } catch (error) {
             return responseFn(res, 500, error.message)
         }

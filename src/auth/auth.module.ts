@@ -8,6 +8,7 @@ import { userSchema } from './model/users.model';
 import { jwtConstants } from '../common/jwt.constants';
 import { messageSchema } from '../chat/model/message.model';
 import { connectionSchema } from '../chat/model/connection.model';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
     imports: [
@@ -26,7 +27,7 @@ import { connectionSchema } from '../chat/model/connection.model';
         })
     ],
     controllers: [AuthController],
-    providers: [AuthService],
+    providers: [AuthService,JwtStrategy],
     exports: [AuthService, JwtModule]
 })
 export class AuthModule { }
