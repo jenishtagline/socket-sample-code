@@ -5,9 +5,9 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { userSchema } from './model/users.model';
-import { jwtConstants } from 'src/common/jwt.constants';
-import { messageSchema } from 'src/chat/model/message.model';
-import { connectionSchema } from 'src/chat/model/connection.model';
+import { jwtConstants } from '../common/jwt.constants';
+import { messageSchema } from '../chat/model/message.model';
+import { connectionSchema } from '../chat/model/connection.model';
 
 @Module({
     imports: [

@@ -5,10 +5,10 @@ import { Model } from 'mongoose';
 import { Users } from './interface/user.interface';
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
-import { responseFn } from 'src/common/response.services';
-import { generateOtp } from 'src/common/util.services';
-import { mail } from 'src/common/mail.services';
-import { Connections } from 'src/chat/interfaces/connections.interface';
+import { responseFn } from '../common/response.services';
+import { generateOtp } from '../common/util.services';
+import { mail } from '../common/mail.services';
+import { Connections } from '../chat/interfaces/connections.interface';
 import * as mongoose from 'mongoose';
 
 const saltRounds = 10;

@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from '@nestjs/websockets';
 import { Model, Mongoose } from 'mongoose';
 import { Server, Socket } from 'socket.io';
-import { Users } from 'src/auth/interface/user.interface';
+import { Users } from '../auth/interface/user.interface';
 import { Connections } from './interfaces/connections.interface';
 import * as mongoose from 'mongoose';
 import { Messages } from './interfaces/messages.interface';
