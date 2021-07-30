@@ -27,6 +27,7 @@ const signUpController = async (req, res) => {
                 await mail(payload)
                 return responseFn(res, 200, 'SignUp Successfully', { username: emailExist.username, email: emailExist.email, dob: emailExist.dob, gender: emailExist.gender, token: emailExist.token })
             }
+            if (!userData.password || userData.password.length <= 8) return responseFn(res, 400, 'Password length should be 8')
             const hashPassword = await bcrypt.hash(userData.password, saltRounds);
             userData.password = hashPassword;
             if (userData.gender) userData.gender = userData.gender.toLowerCase();
@@ -73,7 +74,7 @@ const signUpController = async (req, res) => {
 const loginController = async (req, res) => {
     try {
         const { email, password, fcmToken, deviceuuid, deviceType } = req.body
-        if (!(email && password)) return responseFn(res, 400, "Please Enter Data");
+        if (!(email && password)) return responseFn(res, 400, "Invalid credentials");
 
         const userData = await userModel.findOne({ email, isActive: true })
         if (!userData) return responseFn(res, 400, "User not Found");
@@ -123,14 +124,50 @@ const getUser = async (req, res) => {
 
 const getUsers = async (req, res) => {
     try {
-        let page = Number(req.query.page)
-        let perPage = Number(req.query.perPage)
-        const userData = await userModel.find({ isActive: true }, { username: 1, email: 1, dob: 1, gender: 1 }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
-        return responseFn(res, 200, "Get All Users Successfully", userData)
+        let page = Number(req.query.page);
+        let perPage = Number(req.query.perPage);
+
+        const connectedUserData = await connectionModel.find({
+            $or: [
+                {
+                    userId: mongoose.Types.ObjectId(req.obj._id),
+                    isConnection: "PENDING",
+                },
+                {
+                    connectionId: mongoose.Types.ObjectId(req.obj._id),
+                    isConnection: "PENDING",
+                },
+                {
+                    userId: mongoose.Types.ObjectId(req.obj._id),
+                    isConnection: "ACCEPTED",
+                },
+                {
+                    connectionId: mongoose.Types.ObjectId(req.obj._id),
+                    isConnection: "ACCEPTED",
+                },
+            ],
+        });
+
+        const connectionIdArr = connectedUserData.map((data) => {
+            if (data.userId == req.obj._id)
+                return mongoose.Types.ObjectId(data.connectionId);
+            return mongoose.Types.ObjectId(data.userId);
+        });
+
+        const userData = await userModel
+            .find(
+                { _id: { $nin: [...connectionIdArr, req.obj._id] }, isActive: true },
+                { username: 1, email: 1, dob: 1, gender: 1 }
+            )
+            .sort({ createdAt: -1 })
+            .skip(perPage * (page - 1))
+            .limit(perPage);
+        return responseFn(res, 200, "Get All Users Successfully", userData);
     } catch (error) {
-        return responseFn(res, 500, error.message)
+        return responseFn(res, 500, error.message);
     }
-}
+};
+
 const getConnections = async (req, res) => {
     try {
         let { page, perPage, userId } = req.body
@@ -150,14 +187,23 @@ const getPendingConnections = async (req, res) => {
     try {
         let { page, perPage, userId } = req.body
         if (!userId) return responseFn(res, 400, "User ID not Found");
-        const userData = await connectionModel.find({ $or: [{ userId, isConnection: 'PENDING' }, { connectionId: userId, isConnection: 'PENDING' }] }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
-        const connectionIdArr = userData.map((data) => {
-            if (data.userId == userId) return mongoose.Types.ObjectId(data.connectionId);
-            return mongoose.Types.ObjectId(data.userId);
-        })
-        const userConnectionData = await userModel.find({ _id: { $in: connectionIdArr } }, { username: 1, email: 1, dob: 1, gender: 1 })
+        const userData = await connectionModel
+            .find({
+                $or: [
+                    { userId: mongoose.Types.ObjectId(userId), isConnection: 'PENDING' },
+                    { connectionId: mongoose.Types.ObjectId(userId), isConnection: 'PENDING' }
+                ]
+            }, { userId: 1, connectionId: 1, isConnection: 1 })
+            .populate({ path: "connectionId", model: "users", select: { username: 1, email: 1, dob: 1, gender: 1 } })
+            .populate({ path: "userId", model: "users", select: { username: 1, email: 1, dob: 1, gender: 1 } })
+            .sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
+        // const connectionIdArr = userData.map((data) => {
+        //     if (data.userId == userId) return mongoose.Types.ObjectId(data.connectionId);
+        //     return mongoose.Types.ObjectId(data.userId);
+        // })
+        // const userConnectionData = await userModel.find({ _id: { $in: connectionIdArr } }, { username: 1, email: 1, dob: 1, gender: 1 })
 
-        return responseFn(res, 200, "Get All Pending Connections successfully", userConnectionData)
+        return responseFn(res, 200, "Get All Pending Connections successfully", userData)
     } catch (error) {
         return responseFn(res, 500, error.message)
     }
