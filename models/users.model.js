@@ -1,65 +1,66 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     username: {
-        type: String,
-        default: null
+      type: String,
+      default: null,
     },
     email: {
-        type: String,
-        required: true
+      type: String,
     },
     dob: {
-        type: Date,
-        default: null
+      type: Date,
+      default: null,
     },
     password: {
-        type: String,
+      type: String,
     },
     gender: {
-        type: String,
-        enum: ['male', 'female', 'other', null],
-        default: null
+      type: String,
+      enum: ["male", "female", "other", null],
+      default: null,
     },
     isActive: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
     // isOnline: {
     //     type: Boolean,
     //     default: false
     // },
     token: {
-        type: String,
-        default: null,
+      type: String,
+      default: null,
     },
     otp: {
-        type: Number,
-        default: null,
+      type: Number,
+      default: null,
     },
     fcmToken: {
-        type: String,
-        default: null
+      type: String,
+      default: null,
     },
     deviceuuid: {
-        type: String,
-        default: null
+      type: String,
+      default: null,
     },
     deviceType: {
-        type: String,
-        enum: ['ANDROID', 'IPHONE'],
-        default: 'ANDROID'
+      type: String,
+      enum: ["ANDROID", "IPHONE"],
+      default: "ANDROID",
     },
     providerType: {
-        type: String,
-        enum: ['FB', 'GOOGLE', 'APPLE', 'NORMAL'],
-        default: 'NORMAL'
+      type: String,
+      enum: ["FB", "GOOGLE", "APPLE", "NORMAL"],
+      default: "NORMAL",
     },
     socialInfo: {
-        type: String,
-        default: null
-    }
+      type: String,
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
 
-}, { timestamps: true })
-
-module.exports.userModel = mongoose.model('users', userSchema)
+module.exports.userModel = mongoose.model("users", userSchema);

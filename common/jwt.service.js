@@ -1,32 +1,48 @@
-const jwt = require('jsonwebtoken')
-const { userModel } = require('../models/users.model')
+const jwt = require("jsonwebtoken");
+const { userModel } = require("../models/users.model");
 
-const tokenGenerate = (email, _id) => {
-    return jwt.sign({ email, _id }, process.env.JWT_SECRET_KEY);
-}
+const tokenGenerate = (info, _id) => {
+  return jwt.sign({ info, _id }, process.env.JWT_SECRET_KEY);
+};
 
 const tokenVerify = async (req, res, next) => {
-    try {
-        const token = req.headers['authorization']
-        if (!token) throw Error('Token not provided.')
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
-        if (decoded?._id) {
-            const userData = await userModel.findOne({ _id: decoded._id }).lean().exec();
-            if (userData) {
-                req.obj = { email: decoded.email, _id: decoded._id }
-                next();
-            }
-            else {
-                throw new Error('Invalid user')
-            }
+  try {
+    const token = req.headers["authorization"];
+    console.log("token :>> ", token);
+    if (!token) throw Error("Token not provided.");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    console.log("decoded :>> ", decoded);
+    if (decoded) {
+      if (decoded?.providerType === "APPLE") {
+        const userData = await userModel
+          .findOne({ socialInfo: decoded.email })
+          .lean()
+          .exec();
+        if (userData) {
+          req.obj = { socialInfo: userData.socialInfo, _id: userData._id };
+          next();
+        } else {
+          throw new Error("Invalid user");
         }
-        else {
-            throw new Error('Invalid token')
+      }
+      if (decoded?._id) {
+        const userData = await userModel
+          .findOne({ _id: decoded._id })
+          .lean()
+          .exec();
+        if (userData) {
+          req.obj = { email: decoded.info, _id: decoded._id };
+          next();
+        } else {
+          throw new Error("Invalid user");
         }
-    } catch (error) {
-        return res.json({ statusCode: 401, message: error.message, data: null })
+      }
+    } else {
+      throw new Error("Invalid token");
     }
+  } catch (error) {
+    return res.json({ statusCode: 401, message: error.message, data: null });
+  }
+};
 
-}
-
-module.exports = { tokenGenerate, tokenVerify }
+module.exports = { tokenGenerate, tokenVerify };
