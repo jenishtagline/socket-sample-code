@@ -8,6 +8,7 @@ const db = require("./database");
 const { connectionModel } = require("./models/connection.model");
 const { messageModel } = require("./models/message.model");
 const { users } = require("./models/users.model");
+const mongoose = require("mongoose");
 
 let usersArr = [];
 app.use(express.json());
@@ -26,13 +27,13 @@ socketio.on("connection", async (socket) => {
   const connectionExist = await connectionModel.findOne({
     $or: [
       {
-        userId,
-        connectionId,
+        userId: mongoose.Types.ObjectId(userId),
+        connectionId: mongoose.Types.ObjectId(connectionId),
         isConnection: "ACCEPTED",
       },
       {
-        userId: connectionId,
-        connectionId: userId,
+        userId: mongoose.Types.ObjectId(connectionId),
+        connectionId: mongoose.Types.ObjectId(userId),
         isConnection: "ACCEPTED",
       },
     ],
@@ -45,7 +46,7 @@ socketio.on("connection", async (socket) => {
       data: [],
     });
   }
-  socket.join(connectionExist._id);
+  socket.join("" + connectionExist._id);
   if (userId && connectionId) {
     socket.on(
       "messages",
@@ -56,7 +57,7 @@ socketio.on("connection", async (socket) => {
           isSeen,
           text,
         });
-        socketio.to(connectionExist._id).emit("messages", {
+        socketio.in("" + connectionExist._id).emit("messages", {
           statusCode: 200,
           message: "message send successfully",
           data: messageData,
@@ -113,7 +114,7 @@ socketio.on("connection", async (socket) => {
     }
   );
   socket.on("disconnect", () => {
-    socket.leave(connectionExist._id);
+    socket.leave("" + connectionExist._id);
   });
 });
 
