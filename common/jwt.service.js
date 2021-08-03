@@ -13,24 +13,23 @@ const tokenVerify = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     console.log("decoded :>> ", decoded);
     if (decoded) {
-      if (decoded?.providerType === "APPLE") {
-        const userData = await userModel
-          .findOne({ socialInfo: decoded.email })
-          .lean()
-          .exec();
-        if (userData) {
-          req.obj = { socialInfo: userData.socialInfo, _id: userData._id };
-          next();
-        } else {
-          throw new Error("Invalid user");
-        }
+      if (userData?.providerType === "APPLE") {
+        req.obj = { socialInfo: userData.socialInfo, _id: userData._id };
+        next();
+      } else {
+        throw new Error("Invalid user");
       }
       if (decoded?._id) {
         const userData = await userModel
           .findOne({ _id: decoded._id })
           .lean()
           .exec();
+
         if (userData) {
+          if (userData?.providerType === "APPLE") {
+            req.obj = { socialInfo: userData.socialInfo, _id: userData._id };
+            next();
+          }
           req.obj = { email: decoded.info, _id: decoded._id };
           next();
         } else {
