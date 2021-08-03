@@ -101,7 +101,9 @@ const signUpController = async (req, res) => {
             token: userObject.token,
           });
         }
+
         const emailExist = await userModel.findOne({ email: userData.email });
+
         if (!emailExist) {
           userData.isActive = true;
           if (userData.gender) userData.gender = userData.gender.toLowerCase();
