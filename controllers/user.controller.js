@@ -20,7 +20,7 @@ const signUpController = async (req, res) => {
           return responseFn(res, 400, "Password length should be 8");
         emailExist.otp = generateOtp();
 
-        const token = await tokenGenerate(userData.email, userData._id);
+        const token = await tokenGenerate(emailExist.email, emailExist._id);
         emailExist.token = token;
         await emailExist.save();
         const payload = {
@@ -72,8 +72,8 @@ const signUpController = async (req, res) => {
           if (userExist) {
             if (userData.email) userExist.email = userData.email;
             const token = await tokenGenerate(
-              userData.socialInfo,
-              userData.providerType.toUpperCase()
+              userExist.socialInfo,
+              userExist._id
             );
             userExist.token = token;
             await userExist.save();
@@ -86,31 +86,36 @@ const signUpController = async (req, res) => {
           userData.isActive = true;
           if (userData.providerType)
             userData.providerType = userData.providerType.toUpperCase();
-          const token = await tokenGenerate(
-            userData.socialInfo,
-            userData.providerType.toUpperCase()
-          );
-          userData.token = token;
           if (userData.deviceType)
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
+          const token = await tokenGenerate(
+            userObject.socialInfo,
+            userObject.providerType.toUpperCase()
+          );
+          userObject.token = token;
+          await userObject.save();
           return responseFn(res, 200, "Login Successfully", {
             _id: userObject._id,
             socialInfo: userObject.socialInfo,
             token: userObject.token,
           });
         }
+
         const emailExist = await userModel.findOne({ email: userData.email });
+
         if (!emailExist) {
           userData.isActive = true;
           if (userData.gender) userData.gender = userData.gender.toLowerCase();
           if (userData.providerType)
             userData.providerType = userData.providerType.toUpperCase();
-          const token = await tokenGenerate(userData.email, userData._id);
-          userData.token = token;
+
           if (userData.deviceType)
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
+          const token = await tokenGenerate(userData.email, userObject._id);
+          userObject.token = token;
+          await userObject.save();
           return responseFn(res, 200, "Login Successfully", {
             _id: userObject._id,
             email: userObject.email,
@@ -118,7 +123,7 @@ const signUpController = async (req, res) => {
           });
         } else {
           emailExist.socialInfo = userData.socialInfo;
-          const token = await tokenGenerate(userData.email, userData._id);
+          const token = await tokenGenerate(emailExist.email, emailExist._id);
           emailExist.token = token;
           await emailExist.save();
           return responseFn(res, 200, "Login Successfully", {
