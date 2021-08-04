@@ -368,7 +368,7 @@ const getPendingConnections = async (req, res) => {
 const sendConnectionsRequest = async (req, res) => {
   try {
     let { userId, connectionId, status = "PENDING" } = req.body;
-    console.log("req.obj :>> ", req.obj);
+    if (req.obj._id != userId) return responseFn(res, 400, "Invalid User");
     status = status.toUpperCase();
     if (!(userId && connectionId && status))
       return responseFn(res, 400, "Invalid User Information");
@@ -380,6 +380,7 @@ const sendConnectionsRequest = async (req, res) => {
     });
 
     if (!connectionExist) {
+      if (status !== "PENDING") return responseFn(res, 400, "User Connection Not Found");
       connectionExist = await connectionModel.create({
         userId,
         connectionId,
@@ -392,7 +393,7 @@ const sendConnectionsRequest = async (req, res) => {
     }
     if (connectionExist?.isConnection === "PENDING") {
       if (status === "ACCEPTED") {
-        if (userId === connectionExist.connectionId) {
+        if (userId == connectionExist.connectionId) {
           connectionExist.isConnection = status.toUpperCase();
           await connectionExist.save();
           return responseFn(res, 200, "User Request Accept Successfully", {
@@ -404,7 +405,7 @@ const sendConnectionsRequest = async (req, res) => {
         }
       }
       if (status === "REJECTED") {
-        if (userId === connectionExist.connectionId) {
+        if (userId == connectionExist.connectionId) {
           connectionExist.isConnection = status.toUpperCase();
           await connectionExist.save();
           return responseFn(res, 200, "User Request Reject Successfully", {
@@ -421,11 +422,11 @@ const sendConnectionsRequest = async (req, res) => {
       });
     }
     if (connectionExist?.isConnection === "REJECTED")
-      return responseFn(res, 200, "User Already Rejected Request", {
+      return responseFn(res, 400, "User Already Rejected Request", {
         data: connectionExist,
         isRequest: "REJECTED",
       });
-    return responseFn(res, 200, "User Already Accepted Request", {
+    return responseFn(res, 400, "User Already Accepted Request", {
       data: connectionExist,
       isRequest: "ACCEPTED",
     });
