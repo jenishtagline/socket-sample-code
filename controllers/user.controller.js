@@ -30,6 +30,7 @@ const signUpController = async (req, res) => {
         };
         await mail(payload);
         return responseFn(res, 200, "SignUp Successfully", {
+          _id: emailExist._id,
           username: emailExist.username,
           email: emailExist.email,
           dob: emailExist.dob,
@@ -54,6 +55,7 @@ const signUpController = async (req, res) => {
         };
         await mail(payload);
         return responseFn(res, 200, "SignUp Successfully", {
+          _id:userObject._id,
           username: userObject.username,
           email: userObject.email,
           dob: userObject.dob,
@@ -421,11 +423,14 @@ const sendConnectionsRequest = async (req, res) => {
         isRequest: "PENDING",
       });
     }
-    if (connectionExist?.isConnection === "REJECTED")
-      return responseFn(res, 400, "User Already Rejected Request", {
+    if (status === "PENDING" && connectionExist?.isConnection === "REJECTED") {
+      connectionExist.isConnection = status.toUpperCase();
+      await connectionExist.save();
+      return responseFn(res, 200, "Connection Request send successfully", {
         data: connectionExist,
-        isRequest: "REJECTED",
+        isRequest: "PENDING",
       });
+    }
     return responseFn(res, 400, "User Already Accepted Request", {
       data: connectionExist,
       isRequest: "ACCEPTED",
