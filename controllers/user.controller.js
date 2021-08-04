@@ -38,7 +38,7 @@ const signUpController = async (req, res) => {
           token: emailExist.token,
         });
       }
-      if (!userData.password || userData.password.length <= 8)
+      if (!userData.password || userData.password.length < 8)
         return responseFn(res, 400, "Password length should be 8");
       const hashPassword = await bcrypt.hash(userData.password, saltRounds);
       userData.password = hashPassword;
