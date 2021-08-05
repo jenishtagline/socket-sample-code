@@ -44,9 +44,10 @@ const signUpController = async (req, res) => {
       userData.password = hashPassword;
       if (userData.gender) userData.gender = userData.gender.toLowerCase();
       userData.otp = generateOtp();
-      const token = await tokenGenerate(userData.email, userData._id);
-      userData.token = token;
       const userObject = await userModel.create(userData);
+      const token = await tokenGenerate(userObject.email, userObject._id);
+      userData.token = token;
+      await userObject.save();
       if (userObject) {
         const payload = {
           email: userData.email,
@@ -92,8 +93,8 @@ const signUpController = async (req, res) => {
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
           const token = await tokenGenerate(
-            userExist.socialInfo,
-            userExist._id
+            userObject.socialInfo,
+            userObject._id
           );
           userObject.token = token;
           await userObject.save();
