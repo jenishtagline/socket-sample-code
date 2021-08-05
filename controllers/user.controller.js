@@ -45,8 +45,9 @@ const signUpController = async (req, res) => {
       if (userData.gender) userData.gender = userData.gender.toLowerCase();
       userData.otp = generateOtp();
       const userObject = await userModel.create(userData);
-      const token = await tokenGenerate(userObject.email, userObject._id);
-      userData.token = token;
+
+      const token = tokenGenerate(userObject.email, userObject._id);
+      userObject.token = token;
       await userObject.save();
       if (userObject) {
         const payload = {
@@ -74,7 +75,7 @@ const signUpController = async (req, res) => {
           });
           if (userExist) {
             if (userData.email) userExist.email = userData.email;
-            const token = await tokenGenerate(
+            const token = tokenGenerate(
               userExist.socialInfo,
               userExist._id
             );
@@ -92,7 +93,7 @@ const signUpController = async (req, res) => {
           if (userData.deviceType)
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
-          const token = await tokenGenerate(
+          const token = tokenGenerate(
             userObject.socialInfo,
             userObject._id
           );
@@ -115,7 +116,7 @@ const signUpController = async (req, res) => {
           if (userData.deviceType)
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
-          const token = await tokenGenerate(userData.email, userObject._id);
+          const token = tokenGenerate(userData.email, userObject._id);
           userObject.token = token;
           await userObject.save();
           return responseFn(res, 200, "Login Successfully", {
@@ -125,7 +126,7 @@ const signUpController = async (req, res) => {
           });
         } else {
           emailExist.socialInfo = userData.socialInfo;
-          const token = await tokenGenerate(emailExist.email, emailExist._id);
+          const token = tokenGenerate(emailExist.email, emailExist._id);
           emailExist.token = token;
           await emailExist.save();
           return responseFn(res, 200, "Login Successfully", {
@@ -153,7 +154,7 @@ const loginController = async (req, res) => {
     const comparePassword = await bcrypt.compare(password, userData.password);
     if (!comparePassword) return responseFn(res, 400, "Invalid Password");
 
-    const token = await tokenGenerate(userData.email, userData._id);
+    const token = tokenGenerate(userData.email, userData._id);
     userData.token = token;
     if (fcmToken) userData.fcmToken = fcmToken;
     if (deviceuuid) userData.deviceuuid = deviceuuid;
