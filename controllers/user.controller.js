@@ -92,8 +92,8 @@ const signUpController = async (req, res) => {
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
           const token = await tokenGenerate(
-            userObject.socialInfo,
-            userObject.providerType.toUpperCase()
+            userExist.socialInfo,
+            userExist._id
           );
           userObject.token = token;
           await userObject.save();
