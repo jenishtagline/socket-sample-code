@@ -57,7 +57,7 @@ const signUpController = async (req, res) => {
         };
         await mail(payload);
         return responseFn(res, 200, "SignUp Successfully", {
-          _id:userObject._id,
+          _id: userObject._id,
           username: userObject.username,
           email: userObject.email,
           dob: userObject.dob,
@@ -87,6 +87,10 @@ const signUpController = async (req, res) => {
               token: userExist.token,
             });
           }
+          if (userData?.email) {
+            const emailExist = await userModel.findOne({ email: userData.email });
+            if (emailExist) return responseFn(res, 400, "User Exist");
+          }
           userData.isActive = true;
           if (userData.providerType)
             userData.providerType = userData.providerType.toUpperCase();
@@ -105,9 +109,7 @@ const signUpController = async (req, res) => {
             token: userObject.token,
           });
         }
-
         const emailExist = await userModel.findOne({ email: userData.email });
-
         if (!emailExist) {
           userData.isActive = true;
           if (userData.gender) userData.gender = userData.gender.toLowerCase();
