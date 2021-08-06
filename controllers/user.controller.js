@@ -152,7 +152,7 @@ const loginController = async (req, res) => {
 
     const userData = await userModel.findOne({ email, isActive: true });
     if (!userData) return responseFn(res, 400, "User not Found");
-
+    if (userData?.providerType!=="NORMAL") return responseFn(res, 400,"Invalid email and password")
     const comparePassword = await bcrypt.compare(password, userData.password);
     if (!comparePassword) return responseFn(res, 400, "Invalid Password");
 
