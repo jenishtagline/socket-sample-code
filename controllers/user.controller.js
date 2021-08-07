@@ -16,7 +16,7 @@ const signUpController = async (req, res) => {
       if (emailExist) {
         if (emailExist.isActive)
           return responseFn(res, 400, "User Already Exist");
-        if (!userData.password || userData.password.length <= 8)
+        if (!userData.password || userData.password.length < 8)
           return responseFn(res, 400, "Password length should be 8");
         emailExist.otp = generateOtp();
 
