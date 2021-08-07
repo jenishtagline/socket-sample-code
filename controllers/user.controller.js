@@ -30,6 +30,7 @@ const signUpController = async (req, res) => {
         };
         await mail(payload);
         return responseFn(res, 200, "SignUp Successfully", {
+          _id: emailExist._id,
           username: emailExist.username,
           email: emailExist.email,
           dob: emailExist.dob,
@@ -37,15 +38,17 @@ const signUpController = async (req, res) => {
           token: emailExist.token,
         });
       }
-      if (!userData.password || userData.password.length <= 8)
+      if (!userData.password || userData.password.length < 8)
         return responseFn(res, 400, "Password length should be 8");
       const hashPassword = await bcrypt.hash(userData.password, saltRounds);
       userData.password = hashPassword;
       if (userData.gender) userData.gender = userData.gender.toLowerCase();
       userData.otp = generateOtp();
-      const token = await tokenGenerate(userData.email, userData._id);
-      userData.token = token;
       const userObject = await userModel.create(userData);
+
+      const token = tokenGenerate(userObject.email, userObject._id);
+      userObject.token = token;
+      await userObject.save();
       if (userObject) {
         const payload = {
           email: userData.email,
@@ -54,6 +57,7 @@ const signUpController = async (req, res) => {
         };
         await mail(payload);
         return responseFn(res, 200, "SignUp Successfully", {
+          _id: userObject._id,
           username: userObject.username,
           email: userObject.email,
           dob: userObject.dob,
@@ -71,7 +75,7 @@ const signUpController = async (req, res) => {
           });
           if (userExist) {
             if (userData.email) userExist.email = userData.email;
-            const token = await tokenGenerate(
+            const token = tokenGenerate(
               userExist.socialInfo,
               userExist._id
             );
@@ -83,15 +87,19 @@ const signUpController = async (req, res) => {
               token: userExist.token,
             });
           }
+          if (userData?.email) {
+            const emailExist = await userModel.findOne({ email: userData.email });
+            if (emailExist) return responseFn(res, 400, "User Exist");
+          }
           userData.isActive = true;
           if (userData.providerType)
             userData.providerType = userData.providerType.toUpperCase();
           if (userData.deviceType)
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
-          const token = await tokenGenerate(
+          const token = tokenGenerate(
             userObject.socialInfo,
-            userObject.providerType.toUpperCase()
+            userObject._id
           );
           userObject.token = token;
           await userObject.save();
@@ -101,19 +109,16 @@ const signUpController = async (req, res) => {
             token: userObject.token,
           });
         }
-
         const emailExist = await userModel.findOne({ email: userData.email });
-
         if (!emailExist) {
           userData.isActive = true;
           if (userData.gender) userData.gender = userData.gender.toLowerCase();
           if (userData.providerType)
             userData.providerType = userData.providerType.toUpperCase();
-
           if (userData.deviceType)
             userData.deviceType = userData.deviceType.toUpperCase();
           const userObject = await userModel.create(userData);
-          const token = await tokenGenerate(userData.email, userObject._id);
+          const token = tokenGenerate(userData.email, userObject._id);
           userObject.token = token;
           await userObject.save();
           return responseFn(res, 200, "Login Successfully", {
@@ -123,7 +128,7 @@ const signUpController = async (req, res) => {
           });
         } else {
           emailExist.socialInfo = userData.socialInfo;
-          const token = await tokenGenerate(emailExist.email, emailExist._id);
+          const token = tokenGenerate(emailExist.email, emailExist._id);
           emailExist.token = token;
           await emailExist.save();
           return responseFn(res, 200, "Login Successfully", {
@@ -147,11 +152,11 @@ const loginController = async (req, res) => {
 
     const userData = await userModel.findOne({ email, isActive: true });
     if (!userData) return responseFn(res, 400, "User not Found");
-
+    if (userData?.providerType!=="NORMAL") return responseFn(res, 400,"Invalid email and password")
     const comparePassword = await bcrypt.compare(password, userData.password);
     if (!comparePassword) return responseFn(res, 400, "Invalid Password");
 
-    const token = await tokenGenerate(userData.email, userData._id);
+    const token = tokenGenerate(userData.email, userData._id);
     userData.token = token;
     if (fcmToken) userData.fcmToken = fcmToken;
     if (deviceuuid) userData.deviceuuid = deviceuuid;
@@ -369,7 +374,7 @@ const getPendingConnections = async (req, res) => {
 const sendConnectionsRequest = async (req, res) => {
   try {
     let { userId, connectionId, status = "PENDING" } = req.body;
-    console.log("req.obj :>> ", req.obj);
+    if (req.obj._id != userId) return responseFn(res, 400, "Invalid User");
     status = status.toUpperCase();
     if (!(userId && connectionId && status))
       return responseFn(res, 400, "Invalid User Information");
@@ -381,6 +386,7 @@ const sendConnectionsRequest = async (req, res) => {
     });
 
     if (!connectionExist) {
+      if (status !== "PENDING") return responseFn(res, 400, "User Connection Not Found");
       connectionExist = await connectionModel.create({
         userId,
         connectionId,
@@ -393,7 +399,7 @@ const sendConnectionsRequest = async (req, res) => {
     }
     if (connectionExist?.isConnection === "PENDING") {
       if (status === "ACCEPTED") {
-        if (userId === connectionExist.connectionId) {
+        if (userId == connectionExist.connectionId) {
           connectionExist.isConnection = status.toUpperCase();
           await connectionExist.save();
           return responseFn(res, 200, "User Request Accept Successfully", {
@@ -405,7 +411,7 @@ const sendConnectionsRequest = async (req, res) => {
         }
       }
       if (status === "REJECTED") {
-        if (userId === connectionExist.connectionId) {
+        if (userId == connectionExist.connectionId) {
           connectionExist.isConnection = status.toUpperCase();
           await connectionExist.save();
           return responseFn(res, 200, "User Request Reject Successfully", {
@@ -421,12 +427,15 @@ const sendConnectionsRequest = async (req, res) => {
         isRequest: "PENDING",
       });
     }
-    if (connectionExist?.isConnection === "REJECTED")
-      return responseFn(res, 200, "User Already Rejected Request", {
+    if (status === "PENDING" && connectionExist?.isConnection === "REJECTED") {
+      connectionExist.isConnection = status.toUpperCase();
+      await connectionExist.save();
+      return responseFn(res, 200, "Connection Request send successfully", {
         data: connectionExist,
-        isRequest: "REJECTED",
+        isRequest: "PENDING",
       });
-    return responseFn(res, 200, "User Already Accepted Request", {
+    }
+    return responseFn(res, 400, "User Already Accepted Request", {
       data: connectionExist,
       isRequest: "ACCEPTED",
     });
