@@ -121,10 +121,3 @@ socketio.on("connection", async (socket) => {
 const port = process.env.PORT || 5000;
 console.log(`Server running on port ${port} 🔥`);
 http.listen(port);
-const addUsers = (userId, socketId) => {
-  !usersArr.some((data) => data.userId === userId) &&
-    usersArr.push({ socketId, userId });
-};
-const removeUsers = (socketId) => {
-  usersArr = usersArr.filter((data) => data.socketId !== socketId);
-};

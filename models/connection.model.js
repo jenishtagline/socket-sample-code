@@ -15,17 +15,9 @@ const connectionSchema = new mongoose.Schema({
         enum: ['PENDING', 'ACCEPTED', 'REJECTED'],
         default: 'PENDING'
     },
-    // status: {
-    //     type: Boolean,
-    //     default: false
-    // },
     lastSeen: {
         type: Date
-    },
-    // isActive: {
-    //     type: Boolean,
-    //     default: false
-    // }
+    }
 }, { timestamps: true })
 
 module.exports.connectionModel = mongoose.model('connections', connectionSchema)

@@ -207,14 +207,7 @@ const getUser = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    //     let page = Number(req.query.page)
-    //     let perPage = Number(req.query.perPage)
-    //     const userData = await userModel.find({ isActive: true }, { username: 1, email: 1, dob: 1, gender: 1 }).sort({ createdAt: -1 }).skip(perPage * (page - 1)).limit(perPage)
-
-    //     return responseFn(res, 200, "Get All Users Successfully", userData)
-    // } catch (error) {
-    //     return responseFn(res, 500, error.message)
-    // }
+   
     let page = Number(req.query.page);
     let perPage = Number(req.query.perPage);
 
@@ -261,25 +254,7 @@ const getUsers = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(perPage * (page - 1))
       .limit(perPage);
-    // const getUsersInfo = userData.map((data) => {
-    //   const connectionInfo = connectionIdArr.find(
-    //     ({ connectionId }) => connectionId === data._id
-    //   );
-    //   const payload = {
-    //     userInfo: data._doc,
-    //     connectionInfo,
-    //   };
-    //   return payload;
-    // });
-    // console.log('getUsersInfo :>> ', getUsersInfo);
-    //     const userData = await userModel
-    //         .find(
-    //             { _id: { $nin: [...connectionIdArr, req.obj._id] }, isActive: true },
-    //             { username: 1, email: 1, dob: 1, gender: 1 }
-    //         )
-    //         .sort({ createdAt: -1 })
-    //         .skip(perPage * (page - 1))
-    //         .limit(perPage);
+  
     return responseFn(res, 200, "Get All Users Successfully", {
       connectionIdArr,
       userData,
@@ -355,11 +330,6 @@ const getPendingConnections = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(perPage * (page - 1))
       .limit(perPage);
-    // const connectionIdArr = userData.map((data) => {
-    //     if (data.userId == userId) return mongoose.Types.ObjectId(data.connectionId);
-    //     return mongoose.Types.ObjectId(data.userId);
-    // })
-    // const userConnectionData = await userModel.find({ _id: { $in: connectionIdArr } }, { username: 1, email: 1, dob: 1, gender: 1 })
 
     return responseFn(
       res,
